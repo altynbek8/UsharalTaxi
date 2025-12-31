@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Usharal Taxi",
+    "slug": "my-taxi-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mytaxiapp",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.taxi.mytaxiapp",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Нам нужен доступ к геолокации, чтобы найти вас на карте и подать такси."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.duman.usharaltaxi",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDaEvUJzZWU1ti5YfTDS31-iQL_0NsJQn4" 
+        }
+      }
+    },
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Разрешите доступ к геолокации для работы такси."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2d37aca9-ecf1-43d8-be7e-126dd178ee12"
+      }
+    },
+    "owner": "xenodochial"
+  }
+}
