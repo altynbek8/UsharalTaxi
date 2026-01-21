@@ -14,7 +14,7 @@ import { useAuth } from '../providers/AuthProvider';
 
 export default function OrderChatScreen() {
   const { theme } = useTheme();
-  const { id } = useLocalSearchParams(); // ID заказа
+  const { id } = useLocalSearchParams(); 
   const { user } = useAuth();
   
   const [messages, setMessages] = useState<any[]>([]);
@@ -24,7 +24,6 @@ export default function OrderChatScreen() {
   useEffect(() => {
     fetchMessages();
 
-    // Подписка на сообщения ЭТОГО заказа
     const channel = supabase.channel(`chat_${id}`)
       .on('postgres_changes', { 
           event: 'INSERT', 
@@ -38,7 +37,7 @@ export default function OrderChatScreen() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [id]); // ДОБАВЛЕН ID В ЗАВИСИМОСТИ
 
   async function fetchMessages() {
     const { data } = await supabase
@@ -64,12 +63,11 @@ export default function OrderChatScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Хедер */}
       <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
               <Icon name="arrow-left" type="feather" size={24} />
           </TouchableOpacity>
-          <Text h4 style={{marginLeft: 15}}>Чат с водителем</Text>
+          <Text h4 style={{marginLeft: 15}}>Чат по заказу</Text>
       </View>
 
       <FlatList

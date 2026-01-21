@@ -1,4 +1,4 @@
-import { Button, Input, Text, useTheme } from '@rneui/themed';
+import { Button, Input, Text } from '@rneui/themed';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -7,104 +7,115 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  TouchableOpacity
+  TouchableOpacity,
+  View,
+  StatusBar
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { normalizePhone } from '../../lib/utils'; // <--- НОВОЕ
+import { normalizePhone } from '../../lib/utils';
 
 export default function LoginScreen() {
-  const { theme } = useTheme();
-  
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function signIn() {
     if (!phone.trim() || !password.trim()) return Alert.alert('Ошибка', 'Введите номер и пароль');
-
     setLoading(true);
     
-    // ИСПРАВЛЕНО: Используем нормализатор
-    const cleanPhone = normalizePhone(phone); 
-    const fakeEmail = `${cleanPhone}@taxi.kz`;
+    try {
+        const cleanPhone = normalizePhone(phone); 
+        const fakeEmail = `${cleanPhone}@taxi.kz`;
 
-    // 1. Вход
-    const { data, error } = await supabase.auth.signInWithPassword({ 
-        email: fakeEmail, 
-        password: password 
-    });
-    
-    if (error) {
-      Alert.alert('Ошибка входа', 'Неверный номер или пароль');
-      setLoading(false);
-      return;
-    }
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+            email: fakeEmail, 
+            password: password 
+        });
+        
+        if (error) throw error;
 
-    // 2. Проверка роли (куда перекинуть)
-    if (data.session) {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.session.user.id)
-        .single();
+        if (data.session) {
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles').select('role').eq('id', data.session.user.id).single();
 
-      if (profileError || !profile) {
-        Alert.alert('Ошибка', 'Профиль не найден');
+            if (profileError || !profile) throw new Error('Профиль не найден');
+
+            // ЛОГИКА НАВИГАЦИИ ПО РОЛЯМ
+            if (profile.role === 'admin') {
+                router.replace('/(admin)/dashboard');
+            } else if (profile.role === 'driver') {
+                router.replace('/(driver)/home');
+            } else {
+                router.replace('/(passenger)/home');
+            }
+        }
+    } catch (e: any) {
+        Alert.alert('Ошибка входа', e.message || 'Неверные данные');
+    } finally {
         setLoading(false);
-        return;
-      }
-
-      if (profile.role === 'driver') {
-        router.replace('/(driver)/home');
-      } else {
-        router.replace('/(passenger)/home');
-      }
     }
   }
 
   return (
-    <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-        style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        
-        <Text h1 style={{ textAlign: 'center', marginBottom: 40 }}>Taxi App 🚕</Text>
-        
-        <Input 
-            placeholder="Номер телефона (777...)" 
-            value={phone} 
-            onChangeText={setPhone} 
-            keyboardType="phone-pad" 
-            leftIcon={{ type: 'feather', name: 'phone', color: 'gray' }}
-        />
-        
-        <Input 
-            placeholder="Пароль" 
-            value={password} 
-            onChangeText={setPassword} 
-            secureTextEntry 
-            leftIcon={{ type: 'feather', name: 'lock', color: 'gray' }}
-        />
-        
-        <Button 
-            title="Войти" 
-            onPress={signIn} 
-            loading={loading} 
-            buttonStyle={{ backgroundColor: theme.colors.primary, borderRadius: 10, height: 50 }} 
-            titleStyle={{ color: 'black', fontWeight: 'bold' }} 
-        />
-        
-        <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={{ marginTop: 20 }}>
-          <Text style={{ textAlign: 'center', color: 'gray' }}>Нет аккаунта? Регистрация</Text>
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          
+          <Text h1 style={styles.title}>U-GO TAXI 🚖</Text>
+          <Text style={styles.subtitle}>Вход в систему</Text>
+          
+          <View style={styles.inputContainer}>
+            <Input 
+                placeholder="Номер телефона" 
+                value={phone} 
+                onChangeText={setPhone} 
+                keyboardType="phone-pad" 
+                placeholderTextColor="#666"
+                inputStyle={{ color: 'white' }}
+                leftIcon={{ type: 'feather', name: 'phone', color: '#FFC107' }}
+            />
+            
+            <Input 
+                placeholder="Пароль" 
+                value={password} 
+                onChangeText={setPassword} 
+                secureTextEntry 
+                placeholderTextColor="#666"
+                inputStyle={{ color: 'white' }}
+                leftIcon={{ type: 'feather', name: 'lock', color: '#FFC107' }}
+            />
+          </View>
+          
+          <Button 
+              title="ВОЙТИ" 
+              onPress={signIn} 
+              loading={loading} 
+              buttonStyle={styles.button} 
+              titleStyle={styles.buttonText} 
+          />
+          
+          <TouchableOpacity onPress={() => router.push('/(auth)/register')} style={{ marginTop: 25 }}>
+            <Text style={{ textAlign: 'center', color: '#888' }}>
+                Нет аккаунта? <Text style={{color:'#FFC107', fontWeight:'bold'}}>Регистрация</Text>
+            </Text>
+          </TouchableOpacity>
 
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({ 
-    container: { flex: 1, backgroundColor: 'white' },
-    scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20 }
+    container: { flex: 1, backgroundColor: '#121212' },
+    scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 25 },
+    title: { textAlign: 'center', color: 'white', marginBottom: 5 },
+    subtitle: { textAlign: 'center', color: '#666', marginBottom: 40, fontSize: 16 },
+    inputContainer: { marginBottom: 20 },
+    button: { backgroundColor: '#FFC107', borderRadius: 12, height: 55, shadowColor: '#FFC107', shadowOpacity: 0.3, shadowRadius: 10 },
+    buttonText: { color: 'black', fontWeight: 'bold', fontSize: 18 }
 });

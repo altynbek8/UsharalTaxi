@@ -4,7 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { uploadImage } from '../../lib/uploader'; // Наш загрузчик
+import { uploadImage } from '../../lib/uploader';
 import { useAuth } from '../../providers/AuthProvider';
 
 export default function DriverVerificationScreen() {
@@ -14,7 +14,6 @@ export default function DriverVerificationScreen() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('new');
   
-  // Ссылки на фото
   const [docs, setDocs] = useState({
       license_front: null,
       license_back: null,
@@ -39,11 +38,8 @@ export default function DriverVerificationScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          
-          // --- ДОБАВЛЕНЫ ЭТИ ДВЕ СТРОКИ ---
-          allowsEditing: true, // Включает редактор и КОНВЕРТИРУЕТ В JPG
-          quality: 0.8,        // Хорошее качество
-          // --------------------------------
+          allowsEditing: true,
+          quality: 0.8,
       });
 
       if (!result.canceled) {
@@ -60,16 +56,15 @@ export default function DriverVerificationScreen() {
   };
 
   const submitForReview = async () => {
-      if (!docs.license_front || !docs.tech_passport || !docs.car_photo) {
-          return Alert.alert('Ошибка', 'Загрузите все обязательные фото');
+      // ИСПРАВЛЕННАЯ ПРОВЕРКА ВСЕХ ПОЛЕЙ
+      if (!docs.license_front || !docs.license_back || !docs.tech_passport || !docs.car_photo) {
+          return Alert.alert('Ошибка', 'Пожалуйста, загрузите все 4 фотографии документов');
       }
 
       setLoading(true);
-
-      
       const { error } = await supabase.from('profiles').update({
           documents: docs,
-          verification_status: 'pending' // Отправляем на проверку
+          verification_status: 'pending'
       }).eq('id', user?.id);
 
       setLoading(false);
@@ -82,7 +77,6 @@ export default function DriverVerificationScreen() {
       }
   };
 
-  // Компонент для одной кнопки фото
   const DocButton = ({ title, type, image }: any) => (
       <View style={styles.docContainer}>
           <Text style={styles.docTitle}>{title}</Text>
@@ -149,14 +143,5 @@ const styles = StyleSheet.create({
   statusBox: { flexDirection:'row', alignItems:'center', padding: 15, borderRadius: 10, marginBottom: 20 },
   docContainer: { marginBottom: 20 },
   docTitle: { fontWeight: 'bold', marginBottom: 10 },
-  uploadBox: { 
-      height: 150, 
-      backgroundColor: '#f5f5f5', 
-      borderRadius: 10, 
-      borderWidth: 1, 
-      borderColor: '#ddd', 
-      borderStyle: 'dashed',
-      justifyContent: 'center', 
-      alignItems: 'center' 
-  }
+  uploadBox: { height: 150, backgroundColor: '#f5f5f5', borderRadius: 10, borderWidth: 1, borderColor: '#ddd', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' }
 });
