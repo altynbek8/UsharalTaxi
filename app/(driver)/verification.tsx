@@ -34,18 +34,20 @@ export default function DriverVerificationScreen() {
   }
 
   const pickImage = async (type: string) => {
+      // Если уже на проверке или одобрено - запрещаем менять фото
       if (status === 'pending' || status === 'verified') return;
 
       const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
-          quality: 0.8,
+          quality: 0.7,
       });
 
       if (!result.canceled) {
           setLoading(true);
           try {
-              const url = await uploadImage(result.assets[0].uri);
+              // Грузим в бакет документов
+              const url = await uploadImage(result.assets[0].uri, 'documents');
               setDocs(prev => ({ ...prev, [type]: url }));
           } catch (e: any) {
               Alert.alert('Ошибка', e.message);
@@ -56,7 +58,6 @@ export default function DriverVerificationScreen() {
   };
 
   const submitForReview = async () => {
-      // ИСПРАВЛЕННАЯ ПРОВЕРКА ВСЕХ ПОЛЕЙ
       if (!docs.license_front || !docs.license_back || !docs.tech_passport || !docs.car_photo) {
           return Alert.alert('Ошибка', 'Пожалуйста, загрузите все 4 фотографии документов');
       }
@@ -64,23 +65,23 @@ export default function DriverVerificationScreen() {
       setLoading(true);
       const { error } = await supabase.from('profiles').update({
           documents: docs,
-          verification_status: 'pending'
+          verification_status: 'pending' // Ставим статус "на проверке"
       }).eq('id', user?.id);
 
       setLoading(false);
       
-      if (error) Alert.alert('Ошибка', error.message);
-      else {
-          setStatus('pending');
-          Alert.alert('Отправлено!', 'Администратор проверит ваши документы в ближайшее время.');
-          router.replace('/(driver)/home');
+      if (error) {
+          Alert.alert('Ошибка', error.message);
+      } else {
+          setStatus('pending'); // Мгновенно обновляем экран
+          Alert.alert('Успешно', 'Документы отправлены!');
       }
   };
 
   const DocButton = ({ title, type, image }: any) => (
       <View style={styles.docContainer}>
           <Text style={styles.docTitle}>{title}</Text>
-          <TouchableOpacity onPress={() => pickImage(type)} style={styles.uploadBox}>
+          <TouchableOpacity onPress={() => pickImage(type)} style={styles.uploadBox} disabled={loading}>
               {image ? (
                   <Image source={{ uri: image }} style={{ width: '100%', height: '100%', borderRadius: 10 }} />
               ) : (
@@ -95,24 +96,55 @@ export default function DriverVerificationScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text h3 style={{textAlign:'center', marginBottom: 10}}>Верификация</Text>
       
-      {status === 'verified' && (
-          <View style={[styles.statusBox, {backgroundColor: '#E8F5E9'}]}>
-              <Icon name="check-circle" type="feather" color="green" size={30} />
-              <Text style={{color:'green', fontWeight:'bold', marginLeft: 10}}>Вы верифицированы!</Text>
-          </View>
-      )}
-
+      {/* --- ЭКРАН ОЖИДАНИЯ (ЕСЛИ СТАТУС PENDING) --- */}
       {status === 'pending' && (
-          <View style={[styles.statusBox, {backgroundColor: '#FFF3E0'}]}>
-              <Icon name="clock" type="feather" color="orange" size={30} />
-              <Text style={{color:'#E65100', fontWeight:'bold', marginLeft: 10}}>Документы на проверке...</Text>
+          <View style={styles.centeredView}>
+              <Icon name="clock" type="feather" color="#FFC107" size={80} />
+              <Text h3 style={{textAlign:'center', marginTop: 20}}>Документы на проверке</Text>
+              
+              <Text style={styles.waitText}>
+                  Мы получили ваши фото.{"\n"}
+                  Пожалуйста, ждите несколько часов, пока администратор их проверит.
+              </Text>
+              
+              <Button 
+                title="Вернуться на главную" 
+                onPress={() => router.replace('/(driver)/home')}
+                buttonStyle={{backgroundColor: '#333', borderRadius: 10, paddingHorizontal: 30}}
+                containerStyle={{marginTop: 30}}
+              />
           </View>
       )}
 
+      {/* --- ЭКРАН УСПЕХА (ЕСЛИ СТАТУС VERIFIED) --- */}
+      {status === 'verified' && (
+          <View style={styles.centeredView}>
+              <Icon name="check-circle" type="feather" color="green" size={80} />
+              <Text h3 style={{textAlign:'center', marginTop: 20, color: 'green'}}>Вы верифицированы!</Text>
+              <Text style={{textAlign:'center', color:'gray', marginTop: 10, fontSize: 16}}>
+                  Теперь вы можете выходить на линию и принимать заказы.
+              </Text>
+              <Button 
+                title="Начать работу" 
+                onPress={() => router.replace('/(driver)/home')}
+                buttonStyle={{backgroundColor: '#4CAF50', borderRadius: 10, paddingHorizontal: 30}}
+                containerStyle={{marginTop: 30}}
+              />
+          </View>
+      )}
+
+      {/* --- ЭКРАН ЗАГРУЗКИ (ТОЛЬКО ЕСЛИ NEW ИЛИ REJECTED) --- */}
       {(status === 'new' || status === 'rejected') && (
           <>
+            <Text h3 style={{textAlign:'center', marginBottom: 10}}>Верификация</Text>
+            
+            {status === 'rejected' && (
+                <Text style={{color: 'red', textAlign: 'center', marginBottom: 10, fontWeight: 'bold'}}>
+                    Ваша заявка была отклонена. Пожалуйста, переснимите документы четче.
+                </Text>
+            )}
+
             <Text style={{textAlign:'center', color:'gray', marginBottom: 20}}>
                 Загрузите фото документов, чтобы начать таксовать.
             </Text>
@@ -126,22 +158,25 @@ export default function DriverVerificationScreen() {
                 title="Отправить на проверку" 
                 onPress={submitForReview} 
                 loading={loading}
+                disabled={loading}
                 buttonStyle={{backgroundColor: '#FFC107', borderRadius: 10, marginTop: 20}}
                 titleStyle={{color: 'black', fontWeight: 'bold'}}
             />
+            
+            <Button title="Назад" type="clear" onPress={() => router.back()} containerStyle={{marginTop: 10}} />
           </>
       )}
       
-      <Button title="Назад" type="clear" onPress={() => router.back()} containerStyle={{marginTop: 10}} />
       <View style={{height: 50}}/>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 40, backgroundColor: 'white' },
-  statusBox: { flexDirection:'row', alignItems:'center', padding: 15, borderRadius: 10, marginBottom: 20 },
+  container: { padding: 20, paddingTop: 40, backgroundColor: 'white', flexGrow: 1 },
   docContainer: { marginBottom: 20 },
   docTitle: { fontWeight: 'bold', marginBottom: 10 },
-  uploadBox: { height: 150, backgroundColor: '#f5f5f5', borderRadius: 10, borderWidth: 1, borderColor: '#ddd', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' }
+  uploadBox: { height: 150, backgroundColor: '#f5f5f5', borderRadius: 10, borderWidth: 1, borderColor: '#ddd', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+  centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
+  waitText: { textAlign: 'center', color: 'gray', marginTop: 15, fontSize: 16, lineHeight: 24, paddingHorizontal: 20 }
 });

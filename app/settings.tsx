@@ -24,13 +24,10 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // Данные профиля
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false); // <--- Флаг админа
   
-  // Данные водителя
   const [carModel, setCarModel] = useState('');
   const [carNumber, setCarNumber] = useState('');
   const [carColor, setCarColor] = useState('');
@@ -47,7 +44,6 @@ export default function SettingsScreen() {
       setFullName(data.full_name || '');
       setPhone(data.phone || '');
       setAvatarUrl(data.avatar_url);
-      setIsAdmin(data.is_admin); // <--- Проверяем, админ ли это
       
       if (data.role === 'driver') {
           setCarModel(data.car_model || '');
@@ -59,35 +55,6 @@ export default function SettingsScreen() {
     } finally {
       setLoading(false);
     }
-  }
-  // ... другие функции ...
-
-  async function deleteAccount() {
-      Alert.alert(
-          "Удаление аккаунта",
-          "Вы уверены? Это действие нельзя отменить. Все ваши данные и история поездок будут удалены.",
-          [
-              { text: "Отмена", style: "cancel" },
-              { 
-                  text: "Удалить навсегда", 
-                  style: "destructive", 
-                  onPress: async () => {
-                      setLoading(true);
-                      // Вызываем нашу SQL функцию
-                      const { error } = await supabase.rpc('delete_my_account');
-                      
-                      if (error) {
-                          Alert.alert("Ошибка", error.message);
-                          setLoading(false);
-                      } else {
-                          // Разлогиниваем на клиенте
-                          await supabase.auth.signOut();
-                          router.replace('/(auth)/login');
-                      }
-                  }
-              }
-          ]
-      );
   }
 
   async function pickImage() {
@@ -102,7 +69,7 @@ export default function SettingsScreen() {
           try {
               setUploading(true);
               const uri = result.assets[0].uri;
-              const publicUrl = await uploadImage(uri);
+              const publicUrl = await uploadImage(uri, 'avatars');
               
               const { error } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user?.id);
               if (error) throw error;
@@ -143,100 +110,99 @@ export default function SettingsScreen() {
   }
 
   async function handleLogout() {
-      await supabase.auth.signOut();
-      router.replace('/(auth)/login');
+      Alert.alert("Выход", "Вы уверены?", [
+          { text: "Отмена", style: "cancel" },
+          { 
+              text: "Выйти", 
+              style: "destructive", 
+              onPress: async () => {
+                  await supabase.auth.signOut();
+                  router.replace('/(auth)/login');
+              } 
+          }
+      ]);
   }
 
   if (loading) return <ActivityIndicator size="large" color="#FFC107" style={{marginTop: 50}} />;
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text h2 style={{ textAlign: 'center', marginBottom: 20 }}>Профиль</Text>
+      
+      <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={{padding: 10}}>
+              <Icon name="arrow-left" type="feather" size={24} />
+          </TouchableOpacity>
+          <Text h3 style={{flex: 1, textAlign: 'center', marginRight: 40}}>Профиль</Text>
+      </View>
 
-        {/* Аватарка */}
-        <View style={{alignItems: 'center', marginBottom: 20}}>
+      {/* ВОТ ТУТ ИСПРАВЛЕН ОТСТУП СНИЗУ (paddingBottom: 150) */}
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, paddingBottom: 150 }}>
+
+        <View style={{alignItems: 'center', marginBottom: 30}}>
             <TouchableOpacity onPress={pickImage} disabled={uploading}>
                 <Avatar 
-                    size={100} 
+                    size={110} 
                     rounded 
                     source={avatarUrl ? { uri: avatarUrl } : undefined} 
-                    
-                    // ИСПРАВЛЕНИЕ 1: Если есть фото, иконку делаем undefined (скрываем)
                     icon={avatarUrl ? undefined : { name: 'user', type: 'feather', color: 'gray' }}
-                    
-                    containerStyle={{ backgroundColor: '#e1e1e1' }}
-                    
-                    // ИСПРАВЛЕНИЕ 2: Растягиваем фото на весь круг (cover)
+                    containerStyle={{ backgroundColor: '#e1e1e1', borderWidth: 2, borderColor: '#FFC107' }}
                     imageProps={{ resizeMode: 'cover' }}
                 >
                     <Avatar.Accessory 
                         size={30} 
-                        style={{backgroundColor: '#FFC107'}} 
-                        color="black" 
+                        style={{backgroundColor: '#333'}} 
+                        color="white" 
                         onPress={pickImage} 
                     />
                 </Avatar>
             </TouchableOpacity>
-            {uploading && <Text style={{marginTop: 5, color: 'gray'}}>Загрузка...</Text>}
+            {uploading && <ActivityIndicator size="small" color="black" style={{marginTop: 10}} />}
         </View>
 
         <View style={styles.section}>
             <Text h4 style={styles.label}>Личные данные</Text>
-            <Input label="Имя" value={fullName} onChangeText={setFullName} />
-            <Input label="Телефон" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+7 700 000 00 00" />
+            <Input 
+                label="Имя Фамилия" 
+                value={fullName} 
+                onChangeText={setFullName} 
+                leftIcon={{name:'user', type:'feather', color:'gray'}}
+            />
+            <Input 
+                label="Телефон" 
+                value={phone} 
+                onChangeText={setPhone} 
+                keyboardType="phone-pad" 
+                disabled={true}
+                leftIcon={{name:'phone', type:'feather', color:'gray'}}
+            />
         </View>
 
         {role === 'driver' && (
             <View style={styles.section}>
-                <Text h4 style={styles.label}>Автомобиль 🚖</Text>
-                <Input label="Марка" value={carModel} onChangeText={setCarModel} placeholder="Toyota Camry" />
-                <Input label="Госномер" value={carNumber} onChangeText={setCarNumber} placeholder="777 AAA 02" />
-                <Input label="Цвет" value={carColor} onChangeText={setCarColor} placeholder="Белый" />
+                <Text h4 style={styles.label}>Мой автомобиль 🚖</Text>
+                <Input label="Марка" value={carModel} onChangeText={setCarModel} />
+                <Input label="Госномер" value={carNumber} onChangeText={setCarNumber} />
+                <Input label="Цвет" value={carColor} onChangeText={setCarColor} />
             </View>
         )}
 
         <Button 
-            title="Сохранить изменения" 
+            title="СОХРАНИТЬ ИЗМЕНЕНИЯ" 
             onPress={saveProfile} 
             loading={saving} 
-            buttonStyle={{ backgroundColor: 'black', borderRadius: 10, marginBottom: 15, height: 50 }}
-            titleStyle={{ color: 'white', fontWeight: 'bold' }}
+            buttonStyle={{ backgroundColor: '#FFC107', borderRadius: 10, marginBottom: 15, height: 55 }}
+            titleStyle={{ color: 'black', fontWeight: 'bold' }}
         />
-
-        {/* --- КНОПКА АДМИНА (Видна только админам) --- */}
-        {isAdmin && (
-            <Button 
-                title="Панель Администратора" 
-                type="outline"
-                icon={<Icon name="shield" type="feather" color="#2089dc" style={{marginRight: 10}} />}
-                onPress={() => router.push('/(admin)/dashboard')}
-                buttonStyle={{ borderColor: '#2089dc', borderRadius: 10, marginBottom: 15, height: 50 }}
-                titleStyle={{ color: '#2089dc' }}
-            />
-        )}
-         <TouchableOpacity 
-            onPress={deleteAccount} 
-            style={{marginTop: 30, marginBottom: 10, alignItems: 'center'}}
-        >
-            <Text style={{color: 'gray', fontSize: 12}}>Удалить аккаунт и данные</Text>
-        </TouchableOpacity>
 
         <Button 
             title="Выйти из аккаунта" 
             onPress={handleLogout} 
             type="outline" 
-            buttonStyle={{ borderColor: 'red', borderRadius: 10, height: 50 }} 
-            titleStyle={{ color: 'red' }}
+            buttonStyle={{ borderColor: '#ff4d4d', borderRadius: 10, height: 50, marginTop: 20 }} 
+            titleStyle={{ color: '#ff4d4d' }}
+            icon={{name:'log-out', type:'feather', color:'#ff4d4d', style:{marginRight:10}}}
         />
         
-        <Button 
-            title="Назад" 
-            type="clear" 
-            onPress={() => router.back()} 
-            containerStyle={{ marginTop: 10 }}
-        />
-        <View style={{height: 50}} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -244,6 +210,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'white', paddingTop: 40 },
-  section: { marginBottom: 10 },
-  label: { marginBottom: 10, marginLeft: 10, fontSize: 16 }
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  section: { marginBottom: 20, backgroundColor: '#f9f9f9', padding: 15, borderRadius: 15 },
+  label: { marginBottom: 15, marginLeft: 10, fontSize: 18 }
 });
