@@ -1,50 +1,66 @@
-# Welcome to your Expo app 👋
+# UsharalTaxi - Community-Driven Ride-Hailing Solution
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A specialized mobile application designed to modernize and streamline taxi services in the town of **Usharal, Kazakhstan**. This project provides a localized alternative to global platforms, tailored to the specific infrastructure and needs of the local community.
 
-## Get started
+## 🎯 Project Vision
+The main goal was to solve the "local transit gap" by creating a reliable bridge between independent drivers and passengers in a region where mainstream services like Uber or Yandex often lack full coverage.
 
-1. Install dependencies
+## 🚀 Key Features
 
+### 📍 Precise Location Services
+*   **Real-time Tracking:** Integrated maps to show the current location of available taxis.
+*   **Localized Geocoding:** Optimization for local landmarks and addresses specific to Usharal.
+
+### 🚕 Driver & Passenger Flow
+*   **One-Tap Requests:** Simplified booking process for quick ride hailing.
+*   **Call Integration:** Direct "Call to Driver" functionality for instant communication.
+*   **Fare Estimation:** Transparent pricing logic based on local distance-rate standards.
+
+### 💼 Order Management
+*   **Live Dashboard:** Real-time updates on order status (Pending, Accepted, Completed).
+*   **History & Profile:** Users can track their previous rides and manage their personal data.
+
+### 🌓 Modern UI/UX
+*   **Deep Dark Interface:** Optimized for low-light conditions (perfect for night shifts).
+*   **Performance:** Lightweight build ensures the app runs smoothly even on mid-range Android devices common in the region.
+
+## 🛠 Tech Stack
+
+*   **Frontend:** React Native (Expo), TypeScript.
+*   **Navigation:** Expo Router.
+*   **Backend:** Supabase (Auth, PostgreSQL, Real-time).
+*   **Maps:** Integrated Google Maps / Expo Location API.
+*   **UI Components:** React Native Elements, Custom Styled Components.
+
+## 📂 Architecture
+
+```text
+UsharalTaxi/
+├── app/            # File-based routing (Client & Driver flows)
+├── components/     # Reusable UI elements (Map wrappers, Order cards)
+├── lib/            # API clients, Supabase config, and Map helpers
+└── assets/         # Optimized local assets and icons
+```
+
+## ⚙️ Setup & Running
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/altynbek8/UsharalTaxi.git
+   ```
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-2. Start the app
-
+3. Set up environment variables:
+   *Create a `.env` file with your Supabase credentials.*
+4. Launch:
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 👨‍💻 Developed by
+**Altynbek Temirkhan**  
+Junior Full Stack Engineer | React Native Developer  
